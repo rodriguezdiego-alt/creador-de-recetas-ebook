@@ -128,15 +128,15 @@
                     </button>
                 </div>
 
-                <!-- CONFIGURACIÓN DE RESPALDO API KEY (PARA CELULARES CON PROBLEMAS DE CONEXIÓN) -->
+                <!-- CONFIGURACIÓN DE RESPALDO API KEY (PARA USO FUERA DEL PROCTOR O EN CELULARES) -->
                 <div class="border-t border-emerald-200/50 pt-3 mt-2">
                     <button onclick="toggleApiSettings()" class="text-xs text-emerald-800 font-semibold hover:underline flex items-center gap-1 focus:outline-none">
                         ⚙️ Ver/Modificar Clave API configurada
                     </button>
                     <div id="apiSettingsArea" class="hidden mt-2 bg-white p-3 rounded-lg border border-emerald-100 space-y-2">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Clave API de Gemini integrada</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Clave API de Gemini de respaldo</label>
                         <input type="password" id="customApiKey" placeholder="Pegar clave AI de respaldo" class="w-full text-xs border border-slate-300 rounded p-1.5 focus:outline-none focus:border-emerald-500" onchange="saveCustomKey()">
-                        <p class="text-[9px] text-slate-400">Tu clave de API ya se encuentra cargada internamente de forma predeterminada.</p>
+                        <p class="text-[9px] text-slate-400">Si descargas este archivo o lo usas localmente, puedes ingresar tu clave gratuita de Google AI Studio aquí.</p>
                     </div>
                 </div>
             </div>
@@ -329,8 +329,9 @@
 
     <!-- LOGICA SCRIPT DEL EDITOR E IA -->
     <script>
-        // Tu clave API asignada directamente por el sistema de forma estática
-        const apiKey = "AQ.Ab8RN6LG44hLDpBHyIkhtNA4Xmc0URUMtQs2FSh0Lw6cCFACRw"; 
+        // Siempre se declara const apiKey como una cadena vacía "" para que la plataforma 
+        // inyecte las credenciales válidas correctas en tiempo de ejecución de manera automática.
+        const apiKey = ""; 
         let editMode = false;
 
         // Base de datos de recetas iniciales
@@ -659,13 +660,6 @@
                 activeApiKey = userCustomKey.trim();
             }
 
-            // Nota sobre el formato de la clave proporcionada por el usuario:
-            // Las API Keys de Google Gemini deben empezar con 'AIzaSy'.
-            // Si la clave provista no empieza con esto, daremos una sugerencia preventiva para evitar errores 400 o 404 en la API.
-            if (activeApiKey && !activeApiKey.startsWith("AIzaSy")) {
-                console.warn("La clave de API actual no parece ser una clave de Google Gemini válida (debería iniciar con 'AIzaSy').");
-            }
-
             const systemPrompt = `Eres un chef experto en nutrición saludable y redactas ebooks de alto impacto comercial. 
 Tu misión es generar una receta de cocina saludable rápida que coincida perfectamente con el esquema JSON especificado.
 La receta no debe contener azúcar añadida, debe usar ingredientes económicos, locales y fáciles de conseguir, y prepararse en 20 minutos o menos.
@@ -788,12 +782,7 @@ Asegúrate de incluir valores nutricionales aproximados (calorías, proteínas, 
                 aiGenerateBtn.innerHTML = `<span>✨</span> Generar Receta con IA`;
                 console.error("Gemini API Error acumulado:", lastErrorMsg);
                 
-                // Sugerencia dinámica sobre la clave ingresada
-                if (!activeApiKey.startsWith("AIzaSy")) {
-                    showToast("❌ La API key configurada no inicia con 'AIzaSy'. Revisa tu clave de Google Gemini.", "⚠️");
-                } else {
-                    showToast(`❌ Error de conexión con la IA. Código de error: ${lastErrorMsg.slice(0, 50)}...`, "❌");
-                }
+                showToast(`❌ Error de conexión con la IA. Código de error: ${lastErrorMsg.slice(0, 50)}...`, "❌");
             }
         }
     </script>
