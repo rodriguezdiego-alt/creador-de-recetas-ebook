@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocina Express Saludable - Ebook Creator & AI Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        .font-serif {
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+        .font-sans {
+            font-family: 'Montserrat', sans-serif;
+        }
+        /* Estilos de página para la impresión del PDF */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-layout {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            .page-break {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
+            .recipe-card {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                border: 1px solid #cbd5e1 !important;
+                margin-bottom: 2rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR (SOLO WEB) -->
+    <header class="no-print bg-emerald-900 text-white py-4 px-6 shadow-md flex flex-wrap justify-between items-center gap-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🥗</span>
+            <div>
+                <h1 class="font-serif font-bold text-lg tracking-wide">Ebook de Cocina Express</h1>
+                <p class="text-xs text-emerald-200">Visor de Entrega, Editor & Generador IA</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg transition shadow-md flex items-center gap-2 text-xs">
+                <span>🖨️</span> Guardar PDF para Vender
+            </button>
+            <button onclick="toggleEditMode()" id="editBtn" class="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3 py-2 rounded-lg transition text-xs">
+                ✍️ Modo Editor
+            </button>
+            <button onclick="triggerDownloadJSON()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg transition text-xs flex items-center gap-1">
+                💾 Respaldar Recetas (JSON)
+            </button>
+            <label class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg transition text-xs cursor-pointer flex items-center gap-1">
+                📁 Cargar Respaldo
+                <input type="file" id="jsonUpload" class="hidden" accept=".json" onchange="loadJSON(event)">
+            </label>
+        </div>
+    </header>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm max-w-sm transition-all duration-300">
+        <span id="toast-icon">✨</span>
+        <p id="toast-text"></p>
+    </div>
+
+    <!-- NOTIFICACIÓN EN MODO EDITOR -->
+    <div id="editorNotice" class="hidden no-print bg-amber-500 text-white text-center py-2 text-sm font-semibold shadow-inner">
+        🛠️ Estás en modo editor. Haz clic sobre cualquier texto o receta para personalizar e ingresar tus cambios.
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="flex-1 flex flex-col lg:flex-row">
+        
+        <!-- SIDEBAR DE CONTROL (SOLO WEB) -->
+        <aside class="no-print w-full lg:w-96 bg-white border-r border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto lg:h-[calc(100vh-73px)]">
+            
+            <!-- CONTROLES DEL GENERADOR DE IA -->
+            <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-100 space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🤖</span>
+                    <h3 class="font-serif font-bold text-slate-800 text-base">Creador de Recetas con IA</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Escribe un ingrediente clave o el título de la receta que quieras incorporar y la IA la maquetará con el formato de tu libro al instante.
+                </p>
+
+                <div class="space-y-3 pt-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre o Ingrediente Clave</label>
+                        <input type="text" id="aiInput" placeholder="Ej. Bowl de Chía, Pollo al Curry express" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Capítulo / Categoría</label>
+                        <select id="aiCategory" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="desayuno">Capítulo 1: Desayunos en 10m</option>
+                            <option value="almuerzo">Capítulo 2: Almuerzos para Llevar</option>
+                            <option value="cena">Capítulo 3: Cenas Ligeras</option>
+                        </select>
+                    </div>
+
+                    <button onclick="generateRecipeWithAI()" id="aiGenerateBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition shadow flex justify-center items-center gap-2">
+                        <span>✨</span> Generar Receta con IA
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTROLES MANUALES -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 tracking-wider uppercase">Navegación Rápida</h3>
+                <nav class="flex flex-col gap-1">
+                    <a href="#portada" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">📖 Portada de Libro</a>
+                    <a href="#introduccion" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">🌱 Introducción del Autor</a>
+                    <a href="#seccion-desayunos" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">🍳 Capítulo 1 (Desayunos)</a>
+                    <a href="#seccion-almuerzos" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">🍱 Capítulo 2 (Almuerzos)</a>
+                    <a href="#seccion-cenas" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">🌙 Capítulo 3 (Cenas)</a>
+                    <a href="#bonos" class="px-3 py-2 rounded-md hover:bg-slate-100 text-xs font-semibold text-slate-700 block transition">🎁 Regalos & Bonos Extras</a>
+                </nav>
+            </div>
+
+            <!-- CONTADOR DE RECETAS -->
+            <div class="bg-slate-50 border border-slate-100 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase">Recetas en este PDF</h4>
+                    <p class="text-xs text-slate-400">Objetivo comercial: 250+</p>
+                </div>
+                <div class="bg-emerald-100 text-emerald-800 font-extrabold text-lg px-3 py-1 rounded-full" id="recipeCounter">
+                    4
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 text-xs text-slate-500 space-y-2 leading-relaxed">
+                <p class="font-bold text-slate-700">💡 Consejos de publicación:</p>
+                <p>Usa la IA para rellenar tu recetario velozmente. Una vez generadas las recetas, pulsa <strong>"Respaldar Recetas (JSON)"</strong> para guardar tu trabajo localmente y que puedas continuar editándolo otro día sin perder nada.</p>
+            </div>
+        </aside>
+
+        <!-- AREA DEL EBOOK -->
+        <main class="flex-1 p-4 lg:p-8 flex justify-center overflow-y-auto lg:h-[calc(100vh-73px)]">
+            
+            <!-- EL LIBRO DIGITAL REAL -->
+            <article id="ebook-content" class="print-layout bg-white w-full max-w-3xl shadow-lg border border-slate-200 p-8 md:p-16 space-y-16">
+                
+                <!-- PORTADA (PÁGINA 1) -->
+                <section id="portada" class="min-h-[750px] bg-emerald-950 text-white -m-8 md:-m-16 p-8 md:p-16 flex flex-col justify-between relative overflow-hidden rounded-sm page-break shadow-inner">
+                    <div class="absolute top-0 left-0 w-full h-4 bg-amber-500"></div>
+                    
+                    <div class="my-auto space-y-6">
+                        <span contenteditable="false" class="editable-field bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded tracking-widest uppercase">Ebook Digital Completo</span>
+                        <h1 contenteditable="false" class="editable-field font-serif font-extrabold text-5xl md:text-6xl leading-tight text-white tracking-wide">
+                            Cocina Express<br>Saludable
+                        </h1>
+                        <p contenteditable="false" class="editable-field text-base text-emerald-200 font-light max-w-xl leading-relaxed">
+                            Más de 250 ideas y recetas prácticas que se preparan en menos de 20 minutos. Diseñadas para personas ocupadas que quieren comer bien sin vivir en la cocina.
+                        </p>
+                        <div class="inline-block border-2 border-emerald-400 px-4 py-2 rounded-lg text-emerald-300 font-bold tracking-widest text-xs uppercase">
+                            🔥 Edición de Lanzamiento Premium
+                        </div>
+                    </div>
+
+                    <div class="border-t border-emerald-800 pt-8 mt-12 flex justify-between items-center flex-wrap gap-4">
+                        <div>
+                            <h4 contenteditable="false" class="editable-field font-serif font-bold text-xl text-white tracking-wide">VIDA PRÁCTICA</h4>
+                            <p contenteditable="false" class="editable-field text-xs text-emerald-400">Nutrición simple, real e inteligente.</p>
+                        </div>
+                        <span class="text-3xl">🥗</span>
+                    </div>
+                </section>
+
+                <!-- INTRODUCCIÓN (PÁGINA 2) -->
+                <section id="introduccion" class="page-break space-y-6 pt-8">
+                    <h2 contenteditable="false" class="editable-field font-serif font-bold text-3xl text-emerald-900 border-b border-emerald-100 pb-3">Introducción</h2>
+                    <p contenteditable="false" class="editable-field text-slate-700 leading-relaxed text-justify">
+                        <strong>¡Te damos la bienvenida a tu nueva vida culinaria!</strong>
+                    </p>
+                    <p contenteditable="false" class="editable-field text-slate-700 leading-relaxed text-justify">
+                        El mayor obstáculo que enfrentamos hoy en día para alimentarnos de manera saludable no es la falta de voluntad, ni el costo de los ingredientes; es <strong>el tiempo</strong>. Vivimos en un ritmo acelerado donde cocinar parece una tarea monumental de horas que preferimos evitar pidiendo comida rápida o comprando alimentos ultraprocesados.
+                    </p>
+                    <p contenteditable="false" class="editable-field text-slate-700 leading-relaxed text-justify">
+                        Este libro fue diseñado bajo una premisa fundamental: <strong>comer saludable debe ser fácil, rápido y delicioso.</strong> No necesitas ingredientes exóticos que solo se consiguen en tiendas especializadas costosas, ni pasar toda la tarde lavando ollas y sartenes.
+                    </p>
+
+                    <div class="bg-emerald-50 border-l-4 border-emerald-600 p-5 rounded-r-lg space-y-2">
+                        <h4 class="font-bold text-emerald-900 text-sm uppercase tracking-wide">💡 El Método Express</h4>
+                        <p contenteditable="false" class="editable-field text-xs text-emerald-800 leading-relaxed">
+                            Organizar previamente tus ingredientes antes de prender el fuego reduce el tiempo real de cocina a menos de la mitad. Además, privilegiar técnicas monosartén (one-pan) agiliza la preparación y reduce el lavado de vajilla posterior.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- CAPÍTULO 1: DESAYUNOS -->
+                <section id="seccion-desayunos" class="page-break space-y-8 pt-8">
+                    <div class="bg-slate-50 border-l-4 border-amber-500 p-6 rounded-r-lg">
+                        <span class="text-xs font-bold text-amber-600 tracking-wider uppercase block mb-1">Capítulo 1</span>
+                        <h2 contenteditable="false" class="editable-field font-serif font-bold text-2xl text-slate-800">Desayunos en 10 Minutos</h2>
+                        <p contenteditable="false" class="editable-field text-sm text-slate-500 mt-1 italic">Comienza tu mañana con energía limpia sin retrasar tu rutina diaria.</p>
+                    </div>
+
+                    <div id="container-desayuno" class="space-y-8">
+                        <!-- Las recetas de desayunos se renderizarán dinámicamente aquí -->
+                    </div>
+                </section>
+
+                <!-- CAPÍTULO 2: ALMUERZOS -->
+                <section id="seccion-almuerzos" class="page-break space-y-8 pt-8">
+                    <div class="bg-slate-50 border-l-4 border-emerald-600 p-6 rounded-r-lg">
+                        <span class="text-xs font-bold text-emerald-600 tracking-wider uppercase block mb-1">Capítulo 2</span>
+                        <h2 contenteditable="false" class="editable-field font-serif font-bold text-2xl text-slate-800">Almuerzos Completos para Llevar</h2>
+                        <p contenteditable="false" class="editable-field text-sm text-slate-500 mt-1 italic">Platos balanceados, deliciosos y portátiles que se mantienen perfectos al almuerzo.</p>
+                    </div>
+
+                    <div id="container-almuerzo" class="space-y-8">
+                        <!-- Las recetas de almuerzos se renderizarán dinámicamente aquí -->
+                    </div>
+                </section>
+
+                <!-- CAPÍTULO 3: CENAS -->
+                <section id="seccion-cenas" class="page-break space-y-8 pt-8">
+                    <div class="bg-slate-50 border-l-4 border-teal-600 p-6 rounded-r-lg">
+                        <span class="text-xs font-bold text-teal-600 tracking-wider uppercase block mb-1">Capítulo 3</span>
+                        <h2 contenteditable="false" class="editable-field font-serif font-bold text-2xl text-slate-800">Cenas Ligeras y Digestivas</h2>
+                        <p contenteditable="false" class="editable-field text-sm text-slate-500 mt-1 italic">Recetas bajas en carbohidratos simples que cuidan tu digestión antes de ir a la cama.</p>
+                    </div>
+
+                    <div id="container-cena" class="space-y-8">
+                        <!-- Las recetas de cenas se renderizarán dinámicamente aquí -->
+                    </div>
+                </section>
+
+                <!-- BONOS Y REGALOS -->
+                <section id="bonos" class="page-break space-y-8 pt-8">
+                    <h2 contenteditable="false" class="editable-field font-serif font-bold text-3xl text-emerald-900 border-b border-emerald-100 pb-3">Regalos & Bonos Extras</h2>
+                    
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-lg space-y-2">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
+                            <h3 contenteditable="false" class="editable-field font-bold text-slate-800 text-sm tracking-wide">BONO #1: PLANIFICADOR DE MENÚ SEMANAL INTELIGENTE</h3>
+                            <span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">REGALO</span>
+                        </div>
+                        <p contenteditable="false" class="editable-field text-xs text-slate-700 leading-relaxed">
+                            Organizar el menú dominical te quita la preocupación diaria y te asegura comer rico sin caer en tentaciones procesadas.
+                        </p>
+                        
+                        <!-- TABLA EDITABLE -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="min-w-full text-xs text-left text-slate-600">
+                                <thead class="bg-amber-100 text-amber-900 font-bold uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-4 py-2 border border-amber-200">Día</th>
+                                        <th class="px-4 py-2 border border-amber-200">Desayuno</th>
+                                        <th class="px-4 py-2 border border-amber-200">Almuerzo</th>
+                                        <th class="px-4 py-2 border border-amber-200">Cena</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="bg-white border-b border-amber-100">
+                                        <td class="px-4 py-2 font-bold border border-amber-100">Lunes</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Avena Nocturna</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Ensalada de Quinoa</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Tacos de lechuga</td>
+                                    </tr>
+                                    <tr class="bg-white border-b border-amber-100">
+                                        <td class="px-4 py-2 font-bold border border-amber-100">Martes</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Huevos Shakshuka</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Wrap al Pesto</td>
+                                        <td class="px-4 py-2 border border-amber-100" contenteditable="true">Sopa de vegetales</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 border-l-4 border-emerald-600 p-6 rounded-r-lg space-y-2">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
+                            <h3 contenteditable="false" class="editable-field font-bold text-slate-800 text-sm tracking-wide">BONO #2: GUÍA DE SUSTITUTOS DE AZÚCAR</h3>
+                            <span class="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">EDUCATIVO</span>
+                        </div>
+                        <ul contenteditable="false" class="editable-field list-disc pl-5 text-xs text-slate-700 space-y-2">
+                            <li><strong>Eritritol:</strong> Ideal para repostería ya que se mide 1:1 como el azúcar convencional y resiste altas temperaturas sin perder estabilidad.</li>
+                            <li><strong>Monk Fruit (Fruto del monje):</strong> Gran alternativa natural para endulzar cafés, tés o aderezos sin aportar calorías ni disparar la insulina en sangre.</li>
+                        </ul>
+                    </div>
+                </section>
+
+            </article>
+
+        </main>
+    </div>
+
+    <!-- PIE DE PÁGINA (SOLO WEB) -->
+    <footer class="no-print bg-slate-900 text-slate-400 text-center py-4 text-xs border-t border-slate-800">
+        © 2026 Vida Práctica Ebook Builder - Genera tu Ebook Completo de 250+ Recetas
+    </footer>
+
+    <!-- LOGICA SCRIPT DEL EDITOR E IA -->
+    <script>
+        const apiKey = ""; // API key resolved at runtime by the platform
+        let editMode = false;
+
+        // Base de datos de recetas iniciales
+        let recipes = [
+            {
+                id: "receta-1",
+                category: "desayuno",
+                tag: "Frío / Sin Cocción",
+                name: "1. Bowl de Avena Nocturna con Frutos Rojos (Overnight Oats)",
+                prepTime: "5 min (reposo)",
+                portions: "1",
+                ingredients: [
+                    "1/2 taza de avena en hojuelas enteras",
+                    "3/4 taza de leche vegetal (almendras o coco sin azúcar)",
+                    "1 cucharada de semillas de chía",
+                    "1/2 taza de frutos rojos (arándanos o fresas picadas)",
+                    "1/4 cucharadita de canela en polvo",
+                    "Endulzante al gusto (Stevia o eritritol)"
+                ],
+                steps: [
+                    "En un frasco o recipiente con tapa, mezcla la avena, la leche vegetal, las semillas de chía, la canela y el endulzante.",
+                    "Agita muy bien con una cuchara para que las semillas de chía se integren uniformemente.",
+                    "Coloca los frutos rojos en la superficie, tapa el frasco y refrigera toda la noche (mínimo 6 horas). Consume frío o tibio."
+                ],
+                calories: "280 kcal",
+                carbs: "38g",
+                protein: "9g",
+                fat: "8g"
+            },
+            {
+                id: "receta-2",
+                category: "desayuno",
+                tag: "Sartén / Proteico",
+                name: "2. Huevos Shakshuka Express",
+                prepTime: "10 min",
+                portions: "1",
+                ingredients: [
+                    "2 huevos enteros",
+                    "1/2 taza de puré de tomate natural sin azúcar añadida",
+                    "1/4 de cebolla picada finamente",
+                    "1/4 de pimentón rojo picado en cubos pequeños",
+                    "1 cucharada de aceite de oliva virgen extra",
+                    "Sal, pimienta y comino molido al gusto"
+                ],
+                steps: [
+                    "Calienta el aceite en una sartén mediana. Sofríe la cebolla y el pimentón durante 2 minutos hasta que estén tiernos.",
+                    "Vierte el puré de tomate, sazona con comino, sal y pimienta. Hierve a fuego lento 1 minuto.",
+                    "Haz dos huecos en la salsa y rompe los huevos dentro de ellos. Tapa y cocina a fuego bajo 5 minutos o hasta que la clara cuaje."
+                ],
+                calories: "210 kcal",
+                carbs: "8g",
+                protein: "14g",
+                fat: "13g"
+            },
+            {
+                id: "receta-3",
+                category: "almuerzo",
+                tag: "Vegano / Alto en Fibra",
+                name: "3. Ensalada de Quinoa y Garbanzos con Aderezo Limón-Tahini",
+                prepTime: "10 min",
+                portions: "1",
+                ingredients: [
+                    "3/4 taza de quinoa cocida fría",
+                    "1/2 taza de garbanzos cocidos de lata (escurridos)",
+                    "1/2 pepino picado en cubos medianos",
+                    "1/2 taza de tomates cherry por la mitad",
+                    "Aderezo: 1 cucharada de pasta de tahini, jugo de 1/2 limón, 1 cucharada de agua tibia, pizca de ajo en polvo, sal."
+                ],
+                steps: [
+                    "En un bowl amplio o envase portátil, mezcla la quinoa cocida, los garbanzos, el pepino y los tomates.",
+                    "En una taza pequeña, mezcla vigorosamente los ingredientes del aderezo hasta formar una salsa uniforme y sedosa.",
+                    "Vierte el aderezo sobre la ensalada al momento de consumir o guárdala aderezada (se mantiene excelente hasta por 48h)."
+                ],
+                calories: "390 kcal",
+                carbs: "52g",
+                protein: "15g",
+                fat: "12g"
+            },
+            {
+                id: "receta-4",
+                category: "cena",
+                tag: "Bajo en Carbohidratos",
+                name: "4. Tacos de Lechuga con Carne Molida Estilo Asiático",
+                prepTime: "15 min",
+                portions: "2",
+                ingredients: [
+                    "250g de carne molida de res magra o pavo",
+                    "1 diente de ajo rallado",
+                    "1 cdta de jengibre fresco rallado",
+                    "2 cdas de salsa de soya reducida en sodio",
+                    "1 cda de aceite de sésamo",
+                    "4 hojas de lechuga romana lavadas y secas",
+                    "Cebollín picado para decorar"
+                ],
+                steps: [
+                    "Calienta el aceite en un sartén. Saltea el ajo y el jengibre durante 30 segundos hasta que suelten su fragancia.",
+                    "Agrega la carne y desmenúzala con la espátula. Cocina durante 6 minutos.",
+                    "Agrega la salsa de soya y la mitad del cebollín. Cocina 2 minutos más. Rellena las hojas de lechuga con la mezcla y sirve con cebollín fresco arriba."
+                ],
+                calories: "240 kcal",
+                carbs: "5g",
+                protein: "24g",
+                fat: "12g"
+            }
+        ];
+
+        // Cargar las recetas al iniciar la página
+        window.onload = function() {
+            renderRecipes();
+        }
+
+        // Renderizar dinámicamente las recetas
+        function renderRecipes() {
+            const containers = {
+                desayuno: document.getElementById('container-desayuno'),
+                almuerzo: document.getElementById('container-almuerzo'),
+                cena: document.getElementById('container-cena')
+            };
+
+            // Limpiar contenedores
+            containers.desayuno.innerHTML = '';
+            containers.almuerzo.innerHTML = '';
+            containers.cena.innerHTML = '';
+
+            recipes.forEach((recipe, index) => {
+                const isEditableAttr = editMode ? 'contenteditable="true"' : 'contenteditable="false"';
+                const editClasses = editMode ? 'bg-amber-50 ring-1 ring-amber-300 p-1 rounded' : '';
+
+                const recipeHtml = `
+                    <div class="recipe-card border border-slate-100 rounded-xl p-6 shadow-sm space-y-4 relative" id="${recipe.id}">
+                        <!-- Botón de eliminación solo visible en modo editor -->
+                        <button onclick="deleteRecipe('${recipe.id}')" class="no-print absolute top-3 right-3 bg-red-100 text-red-700 hover:bg-red-200 p-1.5 rounded-full text-xs transition ${editMode ? 'block' : 'hidden'}" title="Eliminar receta">
+                            🗑️
+                        </button>
+                        
+                        <div class="flex justify-between items-start flex-wrap gap-2 pr-6">
+                            <div>
+                                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded uppercase">${recipe.tag}</span>
+                                <h3 ${isEditableAttr} class="editable-field font-serif font-bold text-xl text-slate-800 mt-1 ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'name', this.innerText)">${recipe.name}</h3>
+                            </div>
+                            <div class="text-right text-xs text-slate-500">
+                                <div>⏱️ Prep: <strong ${isEditableAttr} class="editable-field ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'prepTime', this.innerText)">${recipe.prepTime}</strong></div>
+                                <div>🍽️ Porciones: <strong ${isEditableAttr} class="editable-field ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'portions', this.innerText)">${recipe.portions}</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+                            <div>
+                                <h4 class="font-bold text-emerald-800 text-xs uppercase tracking-wider mb-2">Ingredientes</h4>
+                                <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1">
+                                    ${recipe.ingredients.map((ing, i) => `
+                                        <li ${isEditableAttr} class="editable-field ${editClasses}" onblur="updateRecipeArray('${recipe.id}', 'ingredients', ${i}, this.innerText)">${ing}</li>
+                                    `).join('')}
+                                </ul>
+                                ${editMode ? `<button onclick="addListItem('${recipe.id}', 'ingredients')" class="no-print text-xs text-emerald-600 font-bold mt-2">+ Añadir ingrediente</button>` : ''}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-emerald-800 text-xs uppercase tracking-wider mb-2">Paso a Paso</h4>
+                                <ol class="list-decimal pl-5 text-sm text-slate-600 space-y-2 text-justify">
+                                    ${recipe.steps.map((step, i) => `
+                                        <li ${isEditableAttr} class="editable-field ${editClasses}" onblur="updateRecipeArray('${recipe.id}', 'steps', ${i}, this.innerText)">${step}</li>
+                                    `).join('')}
+                                </ol>
+                                ${editMode ? `<button onclick="addListItem('${recipe.id}', 'steps')" class="no-print text-xs text-emerald-600 font-bold mt-2">+ Añadir paso</button>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 flex justify-around text-center text-xs text-slate-500">
+                            <div>Calorías <p ${isEditableAttr} class="editable-field font-bold text-slate-800 ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'calories', this.innerText)">${recipe.calories}</p></div>
+                            <div>Carbohidratos <p ${isEditableAttr} class="editable-field font-bold text-slate-800 ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'carbs', this.innerText)">${recipe.carbs}</p></div>
+                            <div>Proteínas <p ${isEditableAttr} class="editable-field font-bold text-slate-800 ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'protein', this.innerText)">${recipe.protein}</p></div>
+                            <div>Grasas <p ${isEditableAttr} class="editable-field font-bold text-slate-800 ${editClasses}" onblur="updateRecipeData('${recipe.id}', 'fat', this.innerText)">${recipe.fat}</p></div>
+                        </div>
+                    </div>
+                `;
+
+                if (containers[recipe.category]) {
+                    containers[recipe.category].insertAdjacentHTML('beforeend', recipeHtml);
+                }
+            });
+
+            // Actualizar el contador de recetas
+            document.getElementById('recipeCounter').innerText = recipes.length;
+        }
+
+        // Modificar campos de texto simples
+        function updateRecipeData(recipeId, field, value) {
+            const recipe = recipes.find(r => r.id === recipeId);
+            if (recipe) {
+                recipe[field] = value.trim();
+            }
+        }
+
+        // Modificar listas (Ingredientes/Pasos)
+        function updateRecipeArray(recipeId, field, index, value) {
+            const recipe = recipes.find(r => r.id === recipeId);
+            if (recipe && recipe[field]) {
+                recipe[field][index] = value.trim();
+            }
+        }
+
+        // Añadir elemento a la lista
+        function addListItem(recipeId, field) {
+            const recipe = recipes.find(r => r.id === recipeId);
+            if (recipe && recipe[field]) {
+                recipe[field].push("Nuevo elemento (haz clic para editar)");
+                renderRecipes();
+            }
+        }
+
+        // Eliminar receta
+        function deleteRecipe(recipeId) {
+            recipes = recipes.filter(r => r.id !== recipeId);
+            renderRecipes();
+            showToast("❌ Receta eliminada");
+        }
+
+        // Activar/Desactivar el Modo de Edición Manual
+        function toggleEditMode() {
+            editMode = !editMode;
+            const editBtn = document.getElementById('editBtn');
+            const notice = document.getElementById('editorNotice');
+
+            if (editMode) {
+                editBtn.innerHTML = "💾 Salvar Vista";
+                editBtn.classList.remove('bg-emerald-700', 'hover:bg-emerald-600');
+                editBtn.classList.add('bg-amber-600', 'hover:bg-amber-500');
+                notice.classList.remove('hidden');
+            } else {
+                editBtn.innerHTML = "✍️ Modo Editor";
+                editBtn.classList.remove('bg-amber-600', 'hover:bg-amber-500');
+                editBtn.classList.add('bg-emerald-700', 'hover:bg-emerald-600');
+                notice.classList.add('hidden');
+            }
+
+            renderRecipes();
+        }
+
+        // Guardar respaldo JSON
+        function triggerDownloadJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(recipes, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "respaldo_recetas_ebook.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("💾 Respaldo JSON descargado correctamente.");
+        }
+
+        // Cargar respaldo JSON
+        function loadJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedRecipes = JSON.parse(e.target.result);
+                    if (Array.isArray(importedRecipes)) {
+                        recipes = importedRecipes;
+                        renderRecipes();
+                        showToast("📁 Respaldo cargado con éxito.");
+                    } else {
+                        showToast("⚠️ Formato de archivo JSON inválido.");
+                    }
+                } catch (err) {
+                    showToast("⚠️ Error al leer el archivo.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Toast de notificación moderno
+        function showToast(text, icon = "✨") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = text;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 4000);
+        }
+
+        // ================= LLAMADO A LA IA DE GEMINI =================
+        async function generateRecipeWithAI() {
+            const inputVal = document.getElementById('aiInput').value.trim();
+            const categoryVal = document.getElementById('aiCategory').value;
+            const aiGenerateBtn = document.getElementById('aiGenerateBtn');
+
+            if (!inputVal) {
+                showToast("⚠️ Por favor ingresa una idea o ingrediente.");
+                return;
+            }
+
+            aiGenerateBtn.disabled = true;
+            aiGenerateBtn.innerHTML = `<span>⏳</span> Generando Receta...`;
+            showToast("🤖 Conectando con Gemini AI...", "🔄");
+
+            const systemPrompt = `Eres un chef experto en nutrición saludable y redactas ebooks de alto impacto comercial. 
+Tu misión es generar una receta de cocina saludable rápida que coincida perfectamente con el esquema JSON especificado.
+La receta no debe contener azúcar añadida, debe usar ingredientes económicos, locales y fáciles de conseguir, y prepararse en 20 minutos o menos.
+Responde únicamente en formato JSON válido de acuerdo al esquema indicado. Todo el texto debe estar en español de forma elegante y apetitosa.`;
+
+            const promptText = `Genera una receta saludable express para la categoría: "${categoryVal}". 
+Requisito o ingrediente clave: "${inputVal}". 
+Asigna un número de receta consecutivo para el título (por ejemplo, si es la receta número 5, pon "5. [Nombre]").
+Asegúrate de incluir valores nutricionales aproximados (calorías, proteínas, carbohidratos, grasas).`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            name: { type: "STRING", description: "Nombre de la receta con su numeración al inicio" },
+                            tag: { type: "STRING", description: "Etiqueta corta descriptiva (ej. Sartén / Rápido, Alto en Fibra)" },
+                            prepTime: { type: "STRING", description: "Tiempo de preparación aproximado (ej. 15 min)" },
+                            portions: { type: "STRING", description: "Cantidad de porciones (ej. 1 o 2)" },
+                            ingredients: {
+                                type: "ARRAY",
+                                items: { type: "STRING" },
+                                description: "Lista de ingredientes con sus respectivas medidas de forma exacta y clara"
+                            },
+                            steps: {
+                                type: "ARRAY",
+                                items: { type: "STRING" },
+                                description: "Pasos cronológicos para elaborar la receta"
+                            },
+                            calories: { type: "STRING", description: "Calorías totales (ej. 320 kcal)" },
+                            carbs: { type: "STRING", description: "Gramos de carbohidratos (ej. 24g)" },
+                            protein: { type: "STRING", description: "Gramos de proteína (ej. 18g)" },
+                            fat: { type: "STRING", description: "Gramos de grasa (ej. 10g)" }
+                        },
+                        required: ["name", "tag", "prepTime", "portions", "ingredients", "steps", "calories", "carbs", "protein", "fat"]
+                    }
+                }
+            };
+
+            // Implementación de reintentos con exponencial backoff para estabilidad del API
+            let retries = 5;
+            let delay = 1000;
+            let success = false;
+            let jsonResponse = null;
+
+            while (retries > 0 && !success) {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    jsonResponse = JSON.parse(textResponse);
+                    success = true;
+                } catch (err) {
+                    retries--;
+                    if (retries === 0) {
+                        aiGenerateBtn.disabled = false;
+                        aiGenerateBtn.innerHTML = `<span>✨</span> Generar Receta con IA`;
+                        showToast("❌ Error al conectar con la IA. Inténtalo de nuevo.", "❌");
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+
+            if (jsonResponse) {
+                // Agregar ID único e inyectar al arreglo de recetas
+                jsonResponse.id = "receta-" + Date.now();
+                jsonResponse.category = categoryVal;
+
+                recipes.push(jsonResponse);
+                renderRecipes();
+                
+                // Limpiar input y reestablecer botón
+                document.getElementById('aiInput').value = '';
+                aiGenerateBtn.disabled = false;
+                aiGenerateBtn.innerHTML = `<span>✨</span> Generar Receta con IA`;
+
+                showToast("🎉 ¡Receta generada con éxito y añadida a tu libro!", "🥗");
+                
+                // Desplazar suavemente a la nueva receta
+                document.getElementById(jsonResponse.id).scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
