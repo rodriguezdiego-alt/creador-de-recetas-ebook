@@ -56,12 +56,12 @@
             </div>
         </div>
         
-        <!-- Indicador visual del estado de la clave API -->
+        <!-- Indicador visual dinámico del estado de la clave API -->
         <div class="flex items-center gap-2">
-            <div id="statusIndicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                <span>API Conectada</span>
-            </div>
+            <button onclick="openApiKeyModal()" id="statusIndicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>Configurar Clave</span>
+            </button>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
@@ -89,7 +89,7 @@
 
     <!-- NOTIFICACIÓN EN MODO EDITOR -->
     <div id="editorNotice" class="hidden no-print bg-amber-500 text-white text-center py-2 text-sm font-semibold shadow-inner">
-        🛠️ Estás en modo editor. Haz clic sobre cualquier texto o receta para personalizar e ingresar tus cambios.
+        🛠️ Estás en modo editor. Haz clic sobre cualquier text o receta para personalizar e ingresar tus cambios.
     </div>
 
     <!-- CONTENEDOR PRINCIPAL -->
@@ -128,15 +128,15 @@
                     </button>
                 </div>
 
-                <!-- CONFIGURACIÓN DE RESPALDO API KEY (PARA USO FUERA DEL PROCTOR O EN CELULARES) -->
+                <!-- CONFIGURACIÓN DE RESPALDO API KEY (PARA USO EN GITHUB O CELULARES) -->
                 <div class="border-t border-emerald-200/50 pt-3 mt-2">
                     <button onclick="toggleApiSettings()" class="text-xs text-emerald-800 font-semibold hover:underline flex items-center gap-1 focus:outline-none">
-                        ⚙️ Ver/Modificar Clave API configurada
+                        ⚙️ Configurar Clave API de Gemini
                     </button>
                     <div id="apiSettingsArea" class="hidden mt-2 bg-white p-3 rounded-lg border border-emerald-100 space-y-2">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Clave API de Gemini de respaldo</label>
-                        <input type="password" id="customApiKey" placeholder="Pegar clave AI de respaldo" class="w-full text-xs border border-slate-300 rounded p-1.5 focus:outline-none focus:border-emerald-500" onchange="saveCustomKey()">
-                        <p class="text-[9px] text-slate-400">Si descargas este archivo o lo usas localmente, puedes ingresar tu clave gratuita de Google AI Studio aquí.</p>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Clave de respaldo de Gemini</label>
+                        <input type="password" id="customApiKey" placeholder="Pegar clave AI" class="w-full text-xs border border-slate-300 rounded p-1.5 focus:outline-none focus:border-emerald-500" onchange="saveCustomKey()">
+                        <p class="text-[9px] text-slate-400">La clave se guarda localmente en el navegador.</p>
                     </div>
                 </div>
             </div>
@@ -322,6 +322,46 @@
         </main>
     </div>
 
+    <!-- MODAL DE CONFIGURACIÓN DE API KEY (SE ABRE SI NO HAY CLAVE ACTIVA) -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-emerald-100">
+            <div class="flex items-center gap-2.5 text-emerald-900">
+                <span class="text-3xl">🔑</span>
+                <h3 class="font-serif font-bold text-xl">Configurar Generador IA</h3>
+            </div>
+            
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Para que la generación de recetas funcione en GitHub Pages u otros servidores externos, debes configurar tu clave de API de Google Gemini (¡es 100% gratuita!).
+            </p>
+
+            <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-xs text-emerald-800 space-y-2">
+                <p class="font-bold">Pasos para Obtenerla:</p>
+                <ol class="list-decimal pl-4 space-y-1">
+                    <li>Ingresa a <a href="https://aistudio.google.com/" target="_blank" class="font-bold underline text-emerald-950">Google AI Studio</a>.</li>
+                    <li>Presiona el botón azul <strong class="text-emerald-950">"Get API Key"</strong>.</li>
+                    <li>Copia el código que comienza con <strong class="text-emerald-950">"AIzaSy"</strong> y pégalo abajo.</li>
+                </ol>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase">Clave de API Gemini</label>
+                <input type="password" id="modalApiKeyInput" placeholder="Pega tu clave (AIzaSy...)" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+                <a href="https://aistudio.google.com/" target="_blank" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-lg text-xs text-center border border-slate-300 transition">
+                    🌐 Ir a AI Studio
+                </a>
+                <button onclick="saveModalKey()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-xs transition">
+                    💾 Guardar Clave
+                </button>
+            </div>
+            <button onclick="closeApiKeyModal()" class="w-full text-center text-xs text-slate-400 hover:text-slate-600 pt-1 hover:underline">
+                Cerrar, configurar más tarde
+            </button>
+        </div>
+    </div>
+
     <!-- PIE DE PÁGINA (SOLO WEB) -->
     <footer class="no-print bg-slate-900 text-slate-400 text-center py-4 text-xs border-t border-slate-800">
         © 2026 Vida Práctica Ebook Builder - Genera tu Ebook Completo de 250+ Recetas
@@ -377,7 +417,7 @@
                     "Sal, pimienta y comino molido al gusto"
                 ],
                 steps: [
-                    "Calienta el aceite en una sartén mediana. Sofríe la cebolla y el pimentón durante 2 minutos hasta que estén tiernos.",
+                    "Calienta el aceite en una sartén mediana. Sofríe la cebolla y el pimentón durante 2 minutes hasta que estén tiernos.",
                     "Vierte el puré de tomate, sazona con comino, sal y pimienta. Hierve a fuego lento 1 minuto.",
                     "Haz dos huecos en la salsa y rompe los huevos dentro de ellos. Tapa y cocina a fuego bajo 5 minutos o hasta que la clara cuaje."
                 ],
@@ -443,25 +483,78 @@
             renderRecipes();
             const storedKey = localStorage.getItem('gemini_custom_api_key');
             if (storedKey) {
-                document.getElementById('customApiKey').value = storedKey;
+                const customApiKeyElement = document.getElementById('customApiKey');
+                if (customApiKeyElement) {
+                    customApiKeyElement.value = storedKey;
+                }
+                document.getElementById('modalApiKeyInput').value = storedKey;
             }
+            updateStatusIndicator();
         }
 
-        // Mostrar u ocultar sección de API personalizada
+        // Mostrar u ocultar sección de API personalizada en el panel lateral
         function toggleApiSettings() {
             const area = document.getElementById('apiSettingsArea');
             area.classList.toggle('hidden');
         }
 
-        // Guardar API Key de respaldo
+        // Guardar API Key de respaldo desde la barra lateral
         function saveCustomKey() {
             const keyVal = document.getElementById('customApiKey').value.trim();
             if (keyVal) {
                 localStorage.setItem('gemini_custom_api_key', keyVal);
+                document.getElementById('modalApiKeyInput').value = keyVal;
                 showToast("🔑 Clave de respaldo guardada en tu dispositivo.");
             } else {
                 localStorage.removeItem('gemini_custom_api_key');
+                document.getElementById('modalApiKeyInput').value = "";
                 showToast("🗑️ Clave de respaldo eliminada.");
+            }
+            updateStatusIndicator();
+        }
+
+        // Abrir Modal de Clave
+        function openApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.remove('hidden');
+        }
+
+        // Cerrar Modal de Clave
+        function closeApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.add('hidden');
+        }
+
+        // Guardar clave desde el Modal interactivo
+        function saveModalKey() {
+            const keyVal = document.getElementById('modalApiKeyInput').value.trim();
+            if (keyVal) {
+                localStorage.setItem('gemini_custom_api_key', keyVal);
+                
+                // Corrección del error de desbordamiento de nulos: Comprobar que el elemento exista antes de asignarle un valor
+                const customApiKeyElement = document.getElementById('customApiKey');
+                if (customApiKeyElement) {
+                    customApiKeyElement.value = keyVal;
+                }
+                
+                showToast("🔑 ¡Clave guardada y configurada exitosamente!", "✅");
+                closeApiKeyModal();
+            } else {
+                showToast("⚠️ Por favor ingresa una clave válida.", "⚠️");
+            }
+            updateStatusIndicator();
+        }
+
+        // Actualizar el estado del indicador visual de la barra de navegación
+        function updateStatusIndicator() {
+            const indicator = document.getElementById('statusIndicator');
+            const userKey = localStorage.getItem('gemini_custom_api_key');
+            const hasActiveKey = apiKey !== "" || (userKey && userKey.trim() !== "");
+
+            if (hasActiveKey) {
+                indicator.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition cursor-pointer";
+                indicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span>API Conectada</span>`;
+            } else {
+                indicator.className = "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition cursor-pointer";
+                indicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span><span>Configurar Clave</span>`;
             }
         }
 
@@ -483,7 +576,7 @@
                 const editClasses = editMode ? 'bg-amber-50 ring-1 ring-amber-300 p-1 rounded' : '';
 
                 const recipeHtml = `
-                    <div class="recipe-card border border-slate-100 rounded-xl p-6 shadow-sm space-y-4 relative" id="${recipe.id}">
+                    <div class="recipe-card border border-slate-100 rounded-xl p-6 shadow-sm space-y-4 relative bg-white" id="${recipe.id}">
                         <!-- Botón de eliminación solo visible en modo editor -->
                         <button onclick="deleteRecipe('${recipe.id}')" class="no-print absolute top-3 right-3 bg-red-100 text-red-700 hover:bg-red-200 p-1.5 rounded-full text-xs transition ${editMode ? 'block' : 'hidden'}" title="Eliminar receta">
                             🗑️
@@ -644,6 +737,20 @@
             const categoryVal = document.getElementById('aiCategory').value;
             const aiGenerateBtn = document.getElementById('aiGenerateBtn');
 
+            // Selección de la API Key: Clave del entorno o clave del usuario guardada localmente
+            let activeApiKey = apiKey; 
+            const userCustomKey = localStorage.getItem('gemini_custom_api_key');
+            if (userCustomKey && userCustomKey.trim() !== "") {
+                activeApiKey = userCustomKey.trim();
+            }
+
+            // Si no se cuenta con una clave en GitHub Pages, detenemos el flujo y abrimos el modal
+            if (!activeApiKey || activeApiKey.trim() === "") {
+                openApiKeyModal();
+                showToast("⚠️ Debes configurar tu clave de API Gemini primero.", "🔑");
+                return;
+            }
+
             if (!inputVal) {
                 showToast("⚠️ Por favor ingresa una idea o ingrediente.");
                 return;
@@ -652,13 +759,6 @@
             aiGenerateBtn.disabled = true;
             aiGenerateBtn.innerHTML = `<span>⏳</span> Creando...`;
             showToast("🤖 Contactando con la IA...", "🔄");
-
-            // Selección de la API Key: Clave del entorno o clave del usuario guardada localmente
-            let activeApiKey = apiKey; 
-            const userCustomKey = localStorage.getItem('gemini_custom_api_key');
-            if (userCustomKey && userCustomKey.trim() !== "") {
-                activeApiKey = userCustomKey.trim();
-            }
 
             const systemPrompt = `Eres un chef experto en nutrición saludable y redactas ebooks de alto impacto comercial. 
 Tu misión es generar una receta de cocina saludable rápida que coincida perfectamente con el esquema JSON especificado.
